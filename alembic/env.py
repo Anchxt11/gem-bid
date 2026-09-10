@@ -7,7 +7,7 @@ from alembic import context
 
 import os
 from dotenv import load_dotenv
-from backend.app.core.database import Base
+from backend.app.models import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

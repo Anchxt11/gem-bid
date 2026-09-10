@@ -19,7 +19,7 @@ AI-powered bid compliance verification platform for India's Government e-Marketp
 
 ```bash
 git clone <repo-url>
-cd gem-bid
+cd gem_bid
 cp .env.example .env       # fill in any required values
 make up                    # builds and starts backend + postgres
 make migrate                # applies database migrations
@@ -45,7 +45,6 @@ gem-bid/
 ├── backend/
 │ ├── app/ # FastAPI application
 │ └── tests/
-├── src/ # (describe what this is for)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── Makefile
