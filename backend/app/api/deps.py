@@ -13,9 +13,12 @@ from backend.app.services.document_service import DocumentService
 from backend.app.services.verification_orchestrator import VerificationOrchestrator
 from backend.app.repositories.portal_response_repo import PortalResponseRepository
 from backend.app.pipeline.portal_integration.adapters.mock_udyam import MockUdyamAdapter
+from backend.app.repositories.compliance_result_repo import ComplianceResultRepository
+from backend.app.services.compliance_result_service import ComplianceResultService
 
 
 async def get_audit_service(db: AsyncSession = Depends(get_db)) -> AuditService:
+
     return AuditService(AuditLogRepository(db))
 
 
@@ -42,3 +45,12 @@ async def get_verification_orchestrator(
         adapters=adapters,
         portal_response_repo=PortalResponseRepository(db),
     )
+async def get_compliance_repo(db: AsyncSession = Depends(get_db)) -> ComplianceResultRepository:
+    return ComplianceResultRepository(db)
+
+
+async def get_compliance_service(
+    compliance_repo: ComplianceResultRepository = Depends(get_compliance_repo),
+    audit_service: AuditService = Depends(get_audit_service),  # reuse if this already exists
+) -> ComplianceResultService:
+    return ComplianceResultService(compliance_repo, audit_service)
