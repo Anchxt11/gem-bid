@@ -9,7 +9,7 @@ from pydantic import BaseModel
 class PortalVerificationStatus(str, Enum):
     SUCCESS = "success"
     NOT_FOUND = "not_found"
-    UNAVAILABLE = "unavailable"   # timeout / circuit breaker tripped
+    UNAVAILABLE = "unavailable"  # timeout / circuit breaker tripped
     ERROR = "error"
 
 
@@ -20,12 +20,12 @@ class PortalVerificationResult(BaseModel):
     everything downstream — the orchestrator, repo, and scoring engine
     never see adapter-specific shapes, only this.
     """
-    source: str                              # "udyam", "gstn", "digilocker", ...
+    source: str  # "udyam", "gstn", "digilocker", ...
     status: PortalVerificationStatus
-    retrieved_fields: dict = {}              # normalized field:value pairs from the portal
-    confidence: float = 1.0                  # 1.0 for deterministic portal lookups; lower if fuzzy-derived
+    retrieved_fields: dict = {}  # normalized field:value pairs from the portal
+    confidence: float = 1.0  # 1.0 for deterministic portal lookups; lower if fuzzy-derived
     retrieved_at: datetime = datetime.now(timezone.utc)
-    raw_response: dict = {}                  # unprocessed payload, kept for audit/debug
+    raw_response: dict = {}  # unprocessed payload, kept for audit/debug
 
 
 class PortalAdapter(ABC):
@@ -49,3 +49,26 @@ class PortalAdapter(ABC):
         pulls the fields it needs and ignores the rest.
         """
         ...
+
+    def _not_found(self, key_field: str, key_value: str) -> PortalVerificationResult:
+        """Shared helper every mock adapter calls when its lookup key isn't
+        in the mock DB — e.g. a GSTIN that doesn't exist in any record."""
+        return PortalVerificationResult(
+            source=self.source_name,
+            status=PortalVerificationStatus.NOT_FOUND,
+            retrieved_fields={},
+            confidence=1.0,
+            raw_response={key_field: key_value, "found": False},
+        )
+
+    def _unavailable(self, reason: str) -> PortalVerificationResult:
+        """Shared helper for the simulated-timeout/circuit-breaker path —
+        marks the portal as unavailable rather than raising, so one portal
+        being down never blocks the rest of the verification run."""
+        return PortalVerificationResult(
+            source=self.source_name,
+            status=PortalVerificationStatus.UNAVAILABLE,
+            retrieved_fields={},
+            confidence=0.0,
+            raw_response={"error": reason},
+        )
