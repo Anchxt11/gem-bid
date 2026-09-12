@@ -1,13 +1,9 @@
 """
-Mock Udyam/MSME registration adapter.
+Mock ESIC (Employees' State Insurance) adapter.
 
-No accessible sandbox exists for Udyam, so this simulates realistic responses
-shaped like the real Udyam Registration Certificate schema. Keyed on
-`udyam_number` (format: UDYAM-XX-00-0000000).
-
-This is the reference implementation — the pattern proven here (dataset dict +
-lookup + edge-case branching + latency/failure simulation) is copied
-mechanically by every other mock adapter in this package.
+No accessible sandbox. Keyed on `esic_code`. Mirrors the EPFO adapter's shape
+closely since both are labour-compliance registrations with the same kinds
+of real-world edge cases (closed employer, name drift over the years).
 """
 
 from __future__ import annotations
@@ -28,40 +24,33 @@ from backend.app.pipeline.portal_integration.base import (
     PortalVerificationResult,
 )
 
-# Realistic mock "Udyam database" — one row per edge case we need Layer 3/4 to handle.
-_MOCK_UDYAM_DB: dict[str, dict[str, Any]] = {
-    "UDYAM-DL-03-1234567": {
-        "enterprise_name": "SHRESHTA ENGINEERING WORKS",
-        "category": "Small",
-        "major_activity": "Manufacturing",
-        "registration_date": "2021-06-14",
+_MOCK_ESIC_DB: dict[str, dict[str, Any]] = {
+    "11000012340000999": {
+        "employer_name": "SHRESHTA ENGINEERING WORKS",
         "status": "Active",
+        "coverage_type": "Principal Employer",
     },
-    "UDYAM-MH-05-2345678": {
-        "enterprise_name": "VARUNA TECH SOLUTIONS PRIVATE LIMITED",
-        "category": "Micro",
-        "major_activity": "Services",
-        "registration_date": "2019-11-02",
-        "status": "Cancelled",  # -> INACTIVE
+    "27000023450000888": {
+        "employer_name": "VARUNA TECH SOLUTIONS PRIVATE LIMITED",
+        "status": "Closed",  # -> INACTIVE
+        "coverage_type": "Principal Employer",
     },
-    "UDYAM-UP-11-3456789": {
-        "enterprise_name": "NORTHSTAR FABRICATORS",  # deliberately different from bidder's submitted name -> MISMATCH
-        "category": "Medium",
-        "major_activity": "Manufacturing",
-        "registration_date": "2020-01-30",
+    "09000034560000777": {
+        "employer_name": "NORTHSTAR FABRICATORS PVT LTD",  # mismatch
         "status": "Active",
+        "coverage_type": "Immediate Employer",
     },
 }
 
 
-class MockUdyamAdapter(PortalAdapter):
-    source_name = "udyam"
+class MockESICAdapter(PortalAdapter):
+    source_name = "esic"
 
     def __init__(self, failure_rate: float = 0.0) -> None:
         self.failure_rate = failure_rate
 
     async def verify(self, bidder_input: dict[str, Any]) -> PortalVerificationResult:
-        udyam_number = normalize(bidder_input.get("udyam_number"))
+        esic_code = normalize(bidder_input.get("esic_code"))
         submitted_name = normalize(bidder_input.get("legal_name"))
 
         await simulate_latency()
@@ -70,29 +59,29 @@ class MockUdyamAdapter(PortalAdapter):
         except SimulatedTimeout as exc:
             return self._unavailable(str(exc))
 
-        record = _MOCK_UDYAM_DB.get(udyam_number)
+        record = _MOCK_ESIC_DB.get(esic_code)
         if record is None:
-            return self._not_found("udyam_number", udyam_number)
+            return self._not_found("esic_code", esic_code)
 
         retrieved_at = datetime.now(timezone.utc)
-        raw_response = {"udyam_number": udyam_number, **record}
+        raw_response = {"esic_code": esic_code, **record}
 
         if record["status"] != "Active":
             return PortalVerificationResult(
                 source=self.source_name,
                 status=PortalVerificationStatus.SUCCESS,
                 retrieved_fields=record,
-                confidence=fields_with_confidence(0.95),
+                confidence=fields_with_confidence(0.91),
                 retrieved_at=retrieved_at,
                 raw_response=raw_response,
             )
 
-        if submitted_name and submitted_name != normalize(record["enterprise_name"]):
+        if submitted_name and submitted_name != normalize(record["employer_name"]):
             return PortalVerificationResult(
                 source=self.source_name,
                 status=PortalVerificationStatus.SUCCESS,
                 retrieved_fields=record,
-                confidence=fields_with_confidence(0.85),
+                confidence=fields_with_confidence(0.81),
                 retrieved_at=retrieved_at,
                 raw_response=raw_response,
             )
@@ -101,7 +90,7 @@ class MockUdyamAdapter(PortalAdapter):
             source=self.source_name,
             status=PortalVerificationStatus.SUCCESS,
             retrieved_fields=record,
-            confidence=fields_with_confidence(0.97),
+            confidence=fields_with_confidence(0.95),
             retrieved_at=retrieved_at,
             raw_response=raw_response,
         )

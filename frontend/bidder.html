@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeM AI Bid Compliance Verification</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gem: {
+                            blue: '#1a365d',
+                            orange: '#ed8936',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans" x-data="dashboardData()">
+    <!-- Top Navigation -->
+    <nav class="bg-gem-blue text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-shield-alt text-2xl mr-3 text-gem-orange"></i>
+                    <span class="font-bold text-xl">GeM AI Verification Platform</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm">Procurement Officer: <strong>P. Sharma</strong></span>
+                    <button class="bg-blue-700 p-2 rounded-full hover:bg-blue-600"><i class="fas fa-user"></i></button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Breadcrumb / Header -->
+        <div class="flex justify-between items-end mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900" x-text="bidder.name"></h1>
+                <p class="text-gray-500 mt-1">Tender ID: <span x-text="tender.id"></span> | Submission Date: <span x-text="tender.submissionDate"></span></p>
+            </div>
+            <div>
+                <button @click="window.location.href='officer-bidders.html'" class="text-blue-600 hover:text-blue-800 font-medium"><i class="fas fa-arrow-left mr-1"></i> Back to Bidders List</button>
+            </div>
+        </div>
+
+        <div x-show="isLoading" class="flex justify-center my-12">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+        </div>
+
+        <div x-show="!isLoading">
+            <!-- Top Overview Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Compliance Score -->
+                <div class="bg-white rounded-lg shadow p-6 border-t-4 border-green-500 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-500 text-sm font-semibold uppercase tracking-wider">Compliance Score</h3>
+                        <div class="mt-2 flex items-baseline">
+                            <span class="text-4xl font-extrabold" :class="getScoreColor(bidder.score)" x-text="bidder.score + '%'"></span>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <i class="fas fa-check-circle text-2xl"></i>
+                    </div>
+                </div>
+
+                <!-- Risk Level -->
+                <div class="bg-white rounded-lg shadow p-6 border-t-4" :class="getRiskBorderColor(bidder.riskLevel)">
+                    <div>
+                        <h3 class="text-gray-500 text-sm font-semibold uppercase tracking-wider">AI Risk Level</h3>
+                        <div class="mt-2 flex items-center space-x-2">
+                            <span class="text-3xl font-bold" :class="getRiskTextColor(bidder.riskLevel)" x-text="bidder.riskLevel"></span>
+                            <span class="px-2 py-1 text-xs rounded-full font-semibold" :class="getRiskBadgeColor(bidder.riskLevel)" x-text="bidder.riskLevel + ' Risk'"></span>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-600">Based on multi-portal cross-verification</div>
+                </div>
+
+                <!-- Status & Action -->
+                <div class="bg-white rounded-lg shadow p-6 border-t-4 border-blue-500 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-gray-500 text-sm font-semibold uppercase tracking-wider">Verification Status</h3>
+                        <div class="mt-1 text-lg font-medium text-gray-800" x-text="bidder.status"></div>
+                    </div>
+                    <div class="flex space-x-2 mt-4">
+                        <button @click="openDecisionModal('accept')" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded shadow text-sm font-bold transition">
+                            <i class="fas fa-check mr-1"></i> Qualify
+                        </button>
+                        <button @click="openDecisionModal('reject')" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded shadow text-sm font-bold transition">
+                            <i class="fas fa-times mr-1"></i> Disqualify
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Column: Document Checks (2/3 width) -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white shadow rounded-lg p-6">
+                        <h2 class="text-xl font-bold border-b pb-3 mb-4"><i class="fas fa-list-check text-blue-600 mr-2"></i> Statutory & Regulatory Compliance Checks</h2>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requirement</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source Portal</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <template x-for="check in checks" :key="check.id">
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-4 whitespace-nowrap">
+                                                <div class="font-medium text-gray-900" x-text="check.name"></div>
+                                                <div class="text-sm text-gray-500" x-text="check.documentId"></div>
+                                            </td>
+                                            <td class="px-4 py-4 whitespace-nowrap">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800" x-text="check.portal"></span>
+                                            </td>
+                                            <td class="px-4 py-4 whitespace-nowrap">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="getStatusBadgeClass(check.status)" x-text="check.status"></span>
+                                            </td>
+                                            <td class="px-4 py-4 text-sm text-gray-500 max-w-xs truncate" :title="check.details" x-text="check.details"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: AI Insights & Pending (1/3 width) -->
+                <div class="space-y-6">
+                    <!-- AI Recommendations -->
+                    <div class="bg-white shadow rounded-lg p-6 border-l-4 border-purple-500">
+                        <h2 class="text-lg font-bold mb-4 flex items-center">
+                            <i class="fas fa-robot text-purple-600 mr-2"></i> AI Recommendations
+                        </h2>
+                        <ul class="space-y-4">
+                            <template x-for="rec in aiRecommendations" :key="rec.id">
+                                <li class="flex items-start">
+                                    <i class="fas fa-exclamation-circle mt-1 mr-2" :class="rec.type === 'warning' ? 'text-yellow-500' : 'text-blue-500'"></i>
+                                    <div>
+                                        <p class="text-sm text-gray-800 font-medium" x-text="rec.message"></p>
+                                        <p class="text-xs text-gray-500 mt-1" x-text="rec.action"></p>
+                                    </div>
+                                </li>
+                            </template>
+                            <li x-show="aiRecommendations.length === 0" class="text-sm text-gray-500 italic">No specific recommendations at this time.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Pending Requirements -->
+                    <div class="bg-white shadow rounded-lg p-6 border-l-4 border-orange-500">
+                        <h2 class="text-lg font-bold mb-4 flex items-center">
+                            <i class="fas fa-clock text-orange-500 mr-2"></i> Pending Actions / Missing Info
+                        </h2>
+                        <ul class="space-y-3">
+                            <template x-for="item in pendingRequirements" :key="item.id">
+                                <li class="flex items-center text-sm">
+                                    <i class="fas fa-times text-red-500 mr-2"></i>
+                                    <span x-text="item.name" class="text-gray-700"></span>
+                                </li>
+                            </template>
+                            <li x-show="pendingRequirements.length === 0" class="text-sm text-gray-500 italic">No pending requirements.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Decision Modal -->
+    <div x-show="isModalOpen" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="isModalOpen = false"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <!-- Modal panel -->
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10"
+                             :class="decisionType === 'accept' ? 'bg-green-100' : 'bg-red-100'">
+                            <i class="fas" :class="decisionType === 'accept' ? 'fa-check text-green-600' : 'fa-times text-red-600'"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title" x-text="decisionType === 'accept' ? 'Qualify Bidder' : 'Disqualify Bidder'"></h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500">
+                                    Please provide a mandatory justification for your final decision. This will be recorded in the audit trail.
+                                </p>
+                                <textarea x-model="decisionReason" class="mt-3 w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm focus:ring-blue-500 focus:border-blue-500" rows="4" placeholder="Enter reason..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" @click="submitDecision()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white sm:ml-3 sm:w-auto sm:text-sm"
+                            :class="decisionType === 'accept' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'"
+                            :disabled="decisionReason.trim().length === 0"
+                            :class="{'opacity-50 cursor-not-allowed': decisionReason.trim().length === 0}">
+                        Confirm <span x-text="decisionType === 'accept' ? 'Qualification' : 'Disqualification'" class="ml-1"></span>
+                    </button>
+                    <button type="button" @click="isModalOpen = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('dashboardData', () => ({
+                isLoading: true,
+                bidder: {
+                    name: 'Tech Solutions India Pvt Ltd',
+                    score: 82,
+                    riskLevel: 'Medium',
+                    status: 'Pending Officer Review'
+                },
+                tender: {
+                    id: 'GEM/2023/B/1234567',
+                    submissionDate: '12 Sep 2026'
+                },
+                checks: [],
+                aiRecommendations: [],
+                pendingRequirements: [],
+                
+                isModalOpen: false,
+                decisionType: '',
+                decisionReason: '',
+
+                async init() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const id = urlParams.get('id');
+                    
+                    if (id) {
+                        try {
+                            const res = await fetch('/api/v1/dashboard/' + id);
+                            if (res.ok) {
+                                const data = await res.json();
+                                
+                                this.bidder.name = data.company_details.name || 'Unknown Company';
+                                this.bidder.score = data.score;
+                                this.bidder.riskLevel = data.risk_level;
+                                this.bidder.status = data.status;
+                                this.tender.submissionDate = new Date(data.created_at).toLocaleDateString();
+
+                                // Map Compliance Results to Checks
+                                this.checks = data.compliance_results.map((cr, idx) => {
+                                    let portalName = "AI Check";
+                                    let statusText = "Pending";
+                                    if (cr.status === "pass") statusText = "Verified";
+                                    if (cr.status === "fail") statusText = "Discrepancy";
+                                    if (cr.status === "needs_review") statusText = "Warning";
+                                    
+                                    return {
+                                        id: idx,
+                                        name: cr.requirement_id.replace(/_/g, ' ').toUpperCase(),
+                                        documentId: cr.evidence?.bidder_value || "N/A",
+                                        portal: portalName,
+                                        status: statusText,
+                                        details: cr.remarks || "Automated check completed."
+                                    };
+                                });
+                                
+                                // Generate AI Recommendations from bad compliance results
+                                this.aiRecommendations = data.compliance_results
+                                    .filter(cr => cr.status === 'fail' || cr.status === 'needs_review')
+                                    .map((cr, idx) => ({
+                                        id: idx,
+                                        type: cr.status === 'fail' ? 'error' : 'warning',
+                                        message: cr.remarks || `Issue detected in ${cr.requirement_id}`,
+                                        action: "Please review the portal mismatch manually."
+                                    }));
+                            }
+                        } catch(err) {
+                            console.error(err);
+                        }
+                    } else {
+                        // Fallback to placeholder if no ID
+                        this.checks = [
+                            { id: 1, name: 'GST Registration', documentId: 'GSTIN: 27AADCTXXXX', portal: 'GSTN', status: 'Verified', details: 'Returns filed up to Aug.' }
+                        ];
+                    }
+                    this.isLoading = false;
+                },
+
+                getScoreColor(score) {
+                    if (score >= 90) return 'text-green-600';
+                    if (score >= 75) return 'text-yellow-600';
+                    return 'text-red-600';
+                },
+                getRiskTextColor(risk) {
+                    if (risk === 'Low') return 'text-green-600';
+                    if (risk === 'Medium') return 'text-yellow-600';
+                    return 'text-red-600';
+                },
+                getRiskBadgeColor(risk) {
+                    if (risk === 'Low') return 'bg-green-100 text-green-800';
+                    if (risk === 'Medium') return 'bg-yellow-100 text-yellow-800';
+                    return 'bg-red-100 text-red-800';
+                },
+                getRiskBorderColor(risk) {
+                    if (risk === 'Low') return 'border-green-500';
+                    if (risk === 'Medium') return 'border-yellow-500';
+                    return 'border-red-500';
+                },
+                getStatusBadgeClass(status) {
+                    switch(status) {
+                        case 'Verified': return 'bg-green-100 text-green-800';
+                        case 'Discrepancy': return 'bg-red-100 text-red-800';
+                        case 'Warning': return 'bg-yellow-100 text-yellow-800';
+                        case 'Pending': return 'bg-gray-100 text-gray-800';
+                        default: return 'bg-gray-100 text-gray-800';
+                    }
+                },
+                openDecisionModal(type) {
+                    this.decisionType = type;
+                    this.decisionReason = '';
+                    this.isModalOpen = true;
+                },
+                submitDecision() {
+                    if (this.decisionReason.trim() === '') return;
+                    alert(`Decision Recorded: ${this.decisionType.toUpperCase()}\nReason: ${this.decisionReason}\n\nIn a real app, this would send an API request to the backend and append to the Audit Log.`);
+                    this.isModalOpen = false;
+                    this.bidder.status = this.decisionType === 'accept' ? 'Qualified by Officer' : 'Disqualified by Officer';
+                }
+            }))
+        })
+    </script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bidder Portal - GeM AI Verification</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gem: {
+                            blue: '#1a365d',
+                            orange: '#ed8936',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans" x-data="bidderPortalData()">
+    <!-- Top Navigation -->
+    <nav class="bg-gem-blue text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-building text-2xl mr-3 text-gem-orange"></i>
+                    <span class="font-bold text-xl">Bidder Portal</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm">Welcome, <strong>Tech Solutions India</strong></span>
+                    <a href="index.html" class="bg-red-600 px-3 py-1.5 rounded hover:bg-red-700 text-sm font-semibold transition">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="mb-6 border-b pb-4">
+            <h1 class="text-3xl font-bold text-gray-900">Document Upload & Verification</h1>
+            <p class="text-gray-500 mt-1">Upload required documents to complete your AI bid compliance profile.</p>
+        </div>
+
+        <!-- Alert -->
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-8 rounded shadow-sm">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-info-circle text-blue-500"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-blue-700">
+                        The AI verification engine will automatically extract and cross-verify details with government portals (GSTN, Udyam, EPFO, etc.). Please ensure uploaded documents are clear and readable.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Form -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <form @submit.prevent="submitDocuments">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Document Type Select -->
+                    <div class="col-span-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Document Type <span class="text-red-500">*</span></label>
+                        <select x-model="selectedDocType" required class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gem-blue focus:border-gem-blue">
+                            <option value="">Select Document Type</option>
+                            <option value="GST_CERTIFICATE">GST Registration Certificate</option>
+                            <option value="PAN_CARD">PAN Card</option>
+                            <option value="UDYAM_CERTIFICATE">Udyam/MSME Certificate</option>
+                            <option value="EPFO_CHALLAN">EPFO Compliance Challan</option>
+                            <option value="MAKE_IN_INDIA">Make in India Declaration</option>
+                            <option value="OEM_AUTH">OEM Authorization Letter</option>
+                        </select>
+                    </div>
+
+                    <!-- File Input -->
+                    <div class="col-span-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">File <span class="text-red-500">*</span></label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gem-blue transition cursor-pointer" @click="$refs.fileInput.click()">
+                            <div class="space-y-1 text-center">
+                                <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
+                                <div class="flex text-sm text-gray-600 justify-center">
+                                    <span class="relative rounded-md font-medium text-gem-blue hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-gem-blue">
+                                        <span x-text="fileName ? fileName : 'Upload a file'"></span>
+                                        <input x-ref="fileInput" id="file-upload" name="file-upload" type="file" class="sr-only" @change="handleFileChange" accept=".pdf,.png,.jpg,.jpeg">
+                                    </span>
+                                </div>
+                                <p class="text-xs text-gray-500" x-show="!fileName">PNG, JPG, PDF up to 5MB</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button type="submit" :disabled="!selectedDocType || !fileName || isUploading" 
+                            class="bg-gem-blue hover:bg-blue-800 text-white py-2 px-6 rounded shadow-sm font-semibold transition disabled:opacity-50 flex items-center">
+                        <i class="fas fa-spinner fa-spin mr-2" x-show="isUploading"></i>
+                        <span x-text="isUploading ? 'Uploading...' : 'Upload Document'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Uploaded Documents List -->
+        <div class="mt-10">
+            <h2 class="text-xl font-bold mb-4">My Uploaded Documents</h2>
+            <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                <ul class="divide-y divide-gray-200">
+                    <template x-for="doc in uploadedDocs" :key="doc.id">
+                        <li>
+                            <div class="px-4 py-4 flex items-center sm:px-6 hover:bg-gray-50">
+                                <div class="min-w-0 flex-1 sm:flex sm:items-center sm:justify-between">
+                                    <div class="truncate">
+                                        <div class="flex text-sm">
+                                            <p class="font-medium text-gem-blue truncate" x-text="doc.type"></p>
+                                            <p class="ml-1 flex-shrink-0 font-normal text-gray-500">
+                                                added on <span x-text="doc.date"></span>
+                                            </p>
+                                        </div>
+                                        <div class="mt-2 flex">
+                                            <div class="flex items-center text-sm text-gray-500">
+                                                <i class="fas fa-file-alt flex-shrink-0 mr-1.5 text-gray-400"></i>
+                                                <span class="truncate" x-text="doc.filename"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 flex-shrink-0 sm:mt-0 sm:ml-5">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" 
+                                              :class="doc.status === 'Verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
+                                              x-text="doc.status"></span>
+                                    </div>
+                                </div>
+                                <div class="ml-5 flex-shrink-0">
+                                    <button class="text-gray-400 hover:text-red-500" @click="removeDoc(doc.id)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                    </template>
+                    <li x-show="uploadedDocs.length === 0" class="px-4 py-8 text-center text-gray-500">
+                        No documents uploaded yet.
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('bidderPortalData', () => ({
+                selectedDocType: '',
+                fileName: '',
+                isUploading: false,
+                uploadedDocs: [
+                    { id: 1, type: 'GST Registration Certificate', filename: 'gst_cert_2026.pdf', date: '12 Sep 2026', status: 'Verified' },
+                    { id: 2, type: 'PAN Card', filename: 'pan_card_company.jpg', date: '12 Sep 2026', status: 'Pending AI Check' }
+                ],
+                
+                handleFileChange(e) {
+                    if (e.target.files.length > 0) {
+                        this.fileName = e.target.files[0].name;
+                    }
+                },
+                
+                submitDocuments() {
+                    this.isUploading = true;
+                    // Simulate API call
+                    setTimeout(() => {
+                        const typeText = this.$el.querySelector(`select option[value="${this.selectedDocType}"]`).text;
+                        
+                        this.uploadedDocs.unshift({
+                            id: Date.now(),
+                            type: typeText,
+                            filename: this.fileName,
+                            date: 'Just now',
+                            status: 'Pending AI Check'
+                        });
+                        
+                        // Reset
+                        this.selectedDocType = '';
+                        this.fileName = '';
+                        this.$refs.fileInput.value = '';
+                        this.isUploading = false;
+                        
+                        alert('Document uploaded successfully to the verification pipeline.');
+                    }, 1500);
+                },
+                
+                removeDoc(id) {
+                    if(confirm("Are you sure you want to delete this document?")) {
+                        this.uploadedDocs = this.uploadedDocs.filter(d => d.id !== id);
+                    }
+                }
+            }))
+        })
+    </script>
+</body>
+</html>

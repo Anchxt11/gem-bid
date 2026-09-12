@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeM AI Bid Compliance - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gem: {
+                            blue: '#1a365d',
+                            orange: '#ed8936',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 h-screen flex items-center justify-center font-sans">
+    <div class="max-w-4xl w-full mx-4 flex flex-col md:flex-row bg-white rounded-xl shadow-2xl overflow-hidden">
+        
+        <!-- Left Side: Branding -->
+        <div class="md:w-1/2 bg-gem-blue p-10 text-white flex flex-col justify-center relative overflow-hidden">
+            <div class="relative z-10">
+                <i class="fas fa-shield-alt text-5xl text-gem-orange mb-6"></i>
+                <h1 class="text-3xl font-bold mb-4">GeM AI Verification</h1>
+                <p class="text-blue-200 text-lg">Integrated Bid Compliance Verification Platform powered by AI.</p>
+                
+                <ul class="mt-8 space-y-3 text-sm text-blue-100">
+                    <li><i class="fas fa-check-circle text-green-400 mr-2"></i> Multi-Portal Integration</li>
+                    <li><i class="fas fa-check-circle text-green-400 mr-2"></i> AI Document Verification</li>
+                    <li><i class="fas fa-check-circle text-green-400 mr-2"></i> Risk & Compliance Scoring</li>
+                </ul>
+            </div>
+            
+            <!-- Abstract background shape -->
+            <div class="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-600 rounded-full opacity-50 blur-3xl"></div>
+        </div>
+
+        <!-- Right Side: Login -->
+        <div class="md:w-1/2 p-10 flex flex-col justify-center">
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Welcome Back</h2>
+            <p class="text-gray-500 mb-8">Please select your portal to continue.</p>
+
+            <div class="space-y-4">
+                <!-- Officer Login -->
+                <a href="officer-bidders.html" class="block w-full text-left bg-white border border-gray-200 hover:border-blue-500 hover:shadow-md p-4 rounded-lg transition group">
+                    <div class="flex items-center">
+                        <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition">
+                            <i class="fas fa-user-tie text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-bold text-gray-900">Procurement Officer</h3>
+                            <p class="text-sm text-gray-500">Review bids, check AI scores, and take decisions.</p>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Bidder Login -->
+                <a href="bidder-portal.html" class="block w-full text-left bg-white border border-gray-200 hover:border-orange-500 hover:shadow-md p-4 rounded-lg transition group">
+                    <div class="flex items-center">
+                        <div class="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition">
+                            <i class="fas fa-building text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-bold text-gray-900">Bidder Portal</h3>
+                            <p class="text-sm text-gray-500">Upload documents and track verification status.</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            
+            <div class="mt-8 text-center text-sm text-gray-400">
+                &copy; 2026 Government e-Marketplace.
+            </div>
+        </div>
+    </div>
+</body>
+</html>
