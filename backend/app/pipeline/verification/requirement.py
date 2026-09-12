@@ -10,6 +10,9 @@ PAN's "pan_status" all mean the same thing: is this registration active).
 Centralizing that mapping here means reconciliation.py has one generic
 code path instead of nine hardcoded special cases — and adding a 10th
 portal later is a one-entry addition here, not a new branch in the engine.
+bidder_name_field exists for the same reason, but on the bidder's side —
+every entry uses "legal_name" today, but a future entry can point to a
+different bidder-submitted field without changing reconciliation logic.
 """
 
 from __future__ import annotations
@@ -31,7 +34,9 @@ class RequirementDefinition:
     name_field: str | None = None  # key in retrieved_fields holding the entity name
     status_field: str | None = None  # key holding an explicit status string, if the portal has one
     active_values: frozenset[str] = field(default_factory=lambda: frozenset({"active", "valid"}))
-    date_field: str | None = None  # key holding an ISO date; treated as expired if in the past
+    date_field: str | None = None
+    bidder_name_field: str = "legal_name"
+    # key holding an ISO date; treated as expired if in the past
 
 
 REQUIREMENTS: dict[str, RequirementDefinition] = {
@@ -43,6 +48,7 @@ REQUIREMENTS: dict[str, RequirementDefinition] = {
         mandatory=True,
         name_field="enterprise_name",
         status_field="status",
+        bidder_name_field="something_else",
     ),
     "gstn": RequirementDefinition(
         portal_source="gstn",

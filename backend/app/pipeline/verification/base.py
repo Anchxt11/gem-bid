@@ -184,7 +184,7 @@ async def reconcile(
             evidence_refs=[f"portal:{definition.portal_source}"],
         )
 
-    bidder_name = _normalize(bidder_data.get("legal_name"))
+    bidder_name = _normalize(bidder_data.get(definition.bidder_name_field))
     portal_name = _normalize(fields.get(definition.name_field))
 
     if not bidder_name or not portal_name:
