@@ -42,3 +42,14 @@ async def delete_bidder(
     actor: str = Header(default="system", alias="X-Actor"),
 ):
     await service.delete_bidder(bidder_id, actor=actor)
+
+@router.patch("/{bidder_id}/status", response_model=BidderRead)
+async def update_bidder_status(
+    bidder_id: uuid.UUID,
+    body: dict,
+    service: BidderService = Depends(get_bidder_service),
+    actor: str = Header(default="system", alias="X-Actor"),
+):
+    new_status = body.get("status")
+    reason = body.get("reason", "")
+    return await service.update_status(bidder_id, new_status, reason, actor=actor)

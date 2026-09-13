@@ -98,3 +98,5 @@ class MockEPFOAdapter(PortalAdapter):
             retrieved_at=retrieved_at,
             raw_response=raw_response,
         )
+
+_MOCK_EPFO_DB["KABLR0012345000"] = {'establishment_name': 'BHARAT DEFENCE SYSTEMS PVT LTD', 'status': 'Active', 'employees_count': 180, 'last_challan_month': '2026-08'}

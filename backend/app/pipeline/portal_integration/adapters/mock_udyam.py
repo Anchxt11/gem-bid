@@ -105,3 +105,9 @@ class MockUdyamAdapter(PortalAdapter):
             retrieved_at=retrieved_at,
             raw_response=raw_response,
         )
+
+_MOCK_UDYAM_DB["UDYAM-DL-99-8888888"] = {"enterprise_name": "INNOVATE TECH A.I. SOLUTIONS", "category": "Small", "status": "Active"}
+
+_MOCK_UDYAM_DB["UDYAM-KA-07-5550001"] = {'enterprise_name': 'BHARAT DEFENCE SYSTEMS PVT LTD', 'category': 'Medium', 'major_activity': 'Manufacturing', 'registration_date': '2020-03-15', 'status': 'Active'}
+
+_MOCK_UDYAM_DB["UDYAM-MH-02-7770001"] = {'enterprise_name': 'TATA ADVANCED SYSTEMS LIMITED', 'category': 'Medium', 'major_activity': 'Manufacturing', 'registration_date': '2019-07-20', 'status': 'Active'}

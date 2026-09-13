@@ -80,3 +80,7 @@ class MockDebarmentAdapter(PortalAdapter):
             retrieved_at=retrieved_at,
             raw_response={"pan_number": pan_number, "listed": True, **record},
         )
+
+_MOCK_DEBARMENT_DB["INNOV8TE12"] = {"debarred": False, "reason": None, "debarred_by": None}
+
+_MOCK_DEBARMENT_DB["TASLM9876B"] = {'entity_name': 'TATA ADVANCED SYSTEMS LIMITED', 'debarring_authority': 'Ministry of Defence', 'reason': 'Non-compliance with contract terms for naval radar system', 'debarment_start': '2025-06-01', 'debarment_end': '2027-05-31'}

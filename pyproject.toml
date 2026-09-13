@@ -14,6 +14,7 @@ dependencies = [
     "psycopg2-binary>=2.9.12",
     "pytest>=9.1.1",
     "python-dotenv>=1.2.3",
+    "rapidfuzz>=3.14.6",
     "sqlalchemy>=2.0.52",
     "uvicorn>=0.52.4",
 ]
@@ -24,3 +25,11 @@ gem-bid = "gem_bid:main"
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13.0"]
 build-backend = "uv_build"
+[tool.pytest.ini_options]
+pythonpath = ["."]
+asyncio_mode = "auto"
+
+[dependency-groups]
+dev = [
+    "pytest-asyncio>=1.4.0",
+]

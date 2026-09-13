@@ -98,7 +98,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <div class="flex items-center justify-center">
-                                        <span class="text-lg font-bold" :class="getScoreColor(bidder.score)" x-text="bidder.score ? bidder.score + '%' : 'N/A'"></span>
+                                        <span class="text-lg font-bold" :class="bidder.score != null ? getScoreColor(bidder.score) : 'text-gray-400'" x-text="bidder.score != null ? bidder.score + '%' : 'Not Verified'"></span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
@@ -170,7 +170,7 @@
                 async init() {
                     // Try to connect to backend API
                     try {
-                        const response = await fetch('/api/v1/bidders/');
+                        const response = await fetch('/api/v1/dashboard/summary');
                         if (response.ok) {
                             const data = await response.json();
                             if (data && data.length > 0) {
@@ -179,11 +179,11 @@
                                     id: idx + 100, // offset id
                                     fullId: b.bidder_id,
                                     bidderId: b.bidder_id.substring(0, 8),
-                                    name: b.company_details.name || 'Unknown Company',
-                                    tenderId: 'GEM/2023/B/1234567', // Hardcoded as missing in backend model
+                                    name: b.company_details.legal_name || b.company_details.name || 'Unknown Company',
+                                    tenderId: 'GEM/2023/B/1234567',
                                     date: new Date(b.created_at).toLocaleDateString(),
-                                    score: Math.floor(Math.random() * 40) + 60, // Mock score since backend might not have it yet
-                                    riskLevel: b.status === 'VERIFIED' ? 'Low' : 'Medium',
+                                    score: b.score != null ? Math.round(b.score) : null,
+                                    riskLevel: b.risk_level || null,
                                     status: b.status
                                 }));
                             }
