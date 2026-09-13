@@ -21,9 +21,12 @@ Three-tier logic per the architecture doc, cheapest first:
 
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 from datetime import date, datetime, timezone
 
+
+import httpx
 from rapidfuzz import fuzz
 
 from backend.app.pipeline.portal_integration.base import (
@@ -74,12 +77,63 @@ class StubLLMReconciler(LLMReconciler):
             f"flagged for manual officer review rather than guessed.",
         )
 
+class OllamaLLMReconciler(LLMReconciler):
+    def __init__(self, model: str = "llama3.2:3b", base_url: str = "http://localhost:11434"):
+        self.model = model
+        self.base_url = base_url
+
+        async def is_available(self) -> bool:
+            try:
+                async with httpx.AsyncClient(timeout=3.0) as client:
+                    response = await client.get(f"{self.base_url}/api/tags")
+                    return response.status_code == 200
+            except Exception:
+                return False
+
+    async def reconcile_ambiguous_name(self, bidder_name, portal_name, context):
+        prompt = (
+            "You are checking government procurement bidder identity data. "
+            "Two names are being compared: one submitted by the bidder, one "
+            "retrieved from a government portal. Decide if they refer to the "
+            "same legal entity.\n\n"
+            f"Submitted name: {bidder_name}\n"
+            f"Portal name: {portal_name}\n"
+            f"Requirement being checked: {context.get('requirement', 'unknown')}\n\n"
+            "Respond with ONLY a JSON object, no other text, in exactly this shape:\n"
+            '{"match_status": "match" | "minor_discrepancy" | "major_discrepancy" | "unverifiable", '
+            '"reason": "one sentence explaining your decision"}'
+        )
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{self.base_url}/api/chat",
+                    json={
+                        "model": self.model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "stream": False,
+                        "format": "json",
+                    },
+                )
+                response.raise_for_status()
+                content = response.json()["message"]["content"]
+                parsed = json.loads(content)
+            status_str = parsed.get("match_status", "unverifiable")
+            reason = parsed.get("reason", "No reason provided by model.")
+            match_status = MatchStatus(status_str)
+            return match_status, f"[Tier 3 - local Llama] {reason}"
+        except Exception as exc:
+            return (
+                MatchStatus.UNVERIFIABLE,
+                f"Tier 3 LLM call failed ({exc.__class__.__name__}); flagged for manual officer review rather than guessed.",
+            )
 
 async def reconcile(
         bidder_data: dict,
         portal_result: PortalVerificationResult,
         definition: RequirementDefinition,
         llm_reconciler: LLMReconciler | None = None,
+
+
 ) -> RequirementCheck:
     """Turn one portal's result into one Layer 4 RequirementCheck."""
 

@@ -14,7 +14,21 @@ from backend.app.services.verification_orchestrator import VerificationOrchestra
 from backend.app.repositories.portal_response_repo import PortalResponseRepository
 from backend.app.repositories.compliance_result_repo import ComplianceResultRepository
 from backend.app.pipeline.portal_integration.adapters import ALL_MOCK_ADAPTERS
+from backend.app.pipeline.verification.base import OllamaLLMReconciler
+from backend.app.pipeline.verification.base import OllamaLLMReconciler, StubLLMReconciler
 
+_llm_reconciler_instance = None
+
+
+async def get_llm_reconciler():
+    global _llm_reconciler_instance
+    if _llm_reconciler_instance is None:
+        ollama_reconciler = OllamaLLMReconciler()
+        if await ollama_reconciler.is_available():
+            _llm_reconciler_instance = ollama_reconciler
+        else:
+            _llm_reconciler_instance = StubLLMReconciler()
+    return _llm_reconciler_instance
 
 async def get_audit_service(db: AsyncSession = Depends(get_db)) -> AuditService:
     return AuditService(AuditLogRepository(db))
@@ -47,4 +61,5 @@ async def get_verification_orchestrator(
         adapters=adapters,
         portal_response_repo=PortalResponseRepository(db),
         compliance_result_repo=ComplianceResultRepository(db),
+        llm_reconciler=await get_llm_reconciler(),
     )
