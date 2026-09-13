@@ -100,3 +100,9 @@ class MockGSTNAdapter(PortalAdapter):
             retrieved_at=retrieved_at,
             raw_response=raw_response,
         )
+
+_MOCK_GSTN_DB["07INNOV8TE1234Z"] = {"legal_name": "INNOVATETECH AI SOLUTIONS PVT. LTD.", "registration_status": "Suspended", "taxpayer_type": "Regular", "last_return_filed": "2026-08-20"}
+
+_MOCK_GSTN_DB["29BDSPL7890A1ZQ"] = {'legal_name': 'BHARAT DEFENCE SYSTEMS PVT LTD', 'trade_name': 'BHARAT DEFENCE', 'registration_status': 'Active', 'taxpayer_type': 'Regular', 'last_return_filed': '2026-08-15'}
+
+_MOCK_GSTN_DB["27TASLM9876B1Z3"] = {'legal_name': 'TATA ADVANCED SYSTEMS LIMITED', 'trade_name': 'TATA ADVANCED SYSTEMS', 'registration_status': 'Active', 'taxpayer_type': 'Regular', 'last_return_filed': '2026-09-01'}

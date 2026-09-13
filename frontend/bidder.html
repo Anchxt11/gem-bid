@@ -42,13 +42,17 @@
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Breadcrumb / Header -->
-        <div class="flex justify-between items-end mb-6">
+        <div class="flex justify-between items-center mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900" x-text="bidder.name"></h1>
+                <h1 class="text-3xl font-bold text-gray-900" x-text="bidder.name">Tech Solutions India Pvt Ltd</h1>
                 <p class="text-gray-500 mt-1">Tender ID: <span x-text="tender.id"></span> | Submission Date: <span x-text="tender.submissionDate"></span></p>
             </div>
-            <div>
-                <button @click="window.location.href='officer-bidders.html'" class="text-blue-600 hover:text-blue-800 font-medium"><i class="fas fa-arrow-left mr-1"></i> Back to Bidders List</button>
+            <div class="flex space-x-3">
+                <button @click="runVerification()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md shadow-sm text-sm font-medium transition" :disabled="isVerifying" :class="{'opacity-75 cursor-not-allowed': isVerifying}">
+                    <span x-show="!isVerifying"><i class="fas fa-bolt mr-2"></i>Run AI Verification</span>
+                    <span x-show="isVerifying"><i class="fas fa-spinner fa-spin mr-2"></i>Verifying (Layer 2 + 3)...</span>
+                </button>
+                <button @click="window.location.href='officer-bidders.html'" class="text-blue-600 hover:text-blue-800 font-medium py-2"><i class="fas fa-arrow-left mr-1"></i> Back</button>
             </div>
         </div>
 
@@ -60,15 +64,15 @@
             <!-- Top Overview Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <!-- Compliance Score -->
-                <div class="bg-white rounded-lg shadow p-6 border-t-4 border-green-500 flex items-center justify-between">
+                <div class="bg-white rounded-lg shadow p-6 border-t-4 flex items-center justify-between" :class="bidder.score >= 75 ? 'border-green-500' : bidder.score >= 50 ? 'border-yellow-500' : 'border-red-500'">
                     <div>
                         <h3 class="text-gray-500 text-sm font-semibold uppercase tracking-wider">Compliance Score</h3>
                         <div class="mt-2 flex items-baseline">
                             <span class="text-4xl font-extrabold" :class="getScoreColor(bidder.score)" x-text="bidder.score + '%'"></span>
                         </div>
                     </div>
-                    <div class="p-3 rounded-full bg-green-100 text-green-600">
-                        <i class="fas fa-check-circle text-2xl"></i>
+                    <div class="p-3 rounded-full" :class="bidder.score >= 75 ? 'bg-green-100 text-green-600' : bidder.score >= 50 ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-600'">
+                        <i class="text-2xl" :class="bidder.score >= 75 ? 'fas fa-check-circle' : bidder.score >= 50 ? 'fas fa-exclamation-circle' : 'fas fa-times-circle'"></i>
                     </div>
                 </div>
 
@@ -241,38 +245,54 @@
                 pendingRequirements: [],
                 
                 isModalOpen: false,
+                isVerifying: false,
                 decisionType: '',
                 decisionReason: '',
+                overallRecommendation: '',
 
                 async init() {
                     const urlParams = new URLSearchParams(window.location.search);
                     const id = urlParams.get('id');
-                    
                     if (id) {
-                        try {
-                            const res = await fetch('/api/v1/dashboard/' + id);
-                            if (res.ok) {
-                                const data = await res.json();
-                                
-                                this.bidder.name = data.company_details.name || 'Unknown Company';
-                                this.bidder.score = data.score;
-                                this.bidder.riskLevel = data.risk_level;
-                                this.bidder.status = data.status;
-                                this.tender.submissionDate = new Date(data.created_at).toLocaleDateString();
+                        this.bidderId = id;
+                        await this.loadData(id);
+                    } else {
+                        // Fallback to placeholder if no ID
+                        this.checks = [
+                            { id: 1, name: 'GST Registration', documentId: 'GSTIN: 27AADCTXXXX', portal: 'GSTN', status: 'Verified', details: 'Returns filed up to Aug.' }
+                        ];
+                        this.isLoading = false;
+                    }
+                },
+                
+                async loadData(id) {
+                    try {
+                        const res = await fetch('/api/v1/dashboard/' + id);
+                        if (res.ok) {
+                            const data = await res.json();
+                            
+                            this.bidder.name = data.company_details.legal_name || data.company_details.name || 'Unknown Company';
+                            this.bidder.score = data.score != null ? Math.round(data.score * 100) / 100 : 0;
+                            this.bidder.riskLevel = data.risk_level || 'Pending';
+                            this.bidder.status = data.status;
+                            this.tender.submissionDate = new Date(data.created_at).toLocaleDateString();
 
+                            if (data.compliance_results && data.compliance_results.length > 0) {
                                 // Map Compliance Results to Checks
                                 this.checks = data.compliance_results.map((cr, idx) => {
-                                    let portalName = "AI Check";
                                     let statusText = "Pending";
                                     if (cr.status === "pass") statusText = "Verified";
                                     if (cr.status === "fail") statusText = "Discrepancy";
                                     if (cr.status === "needs_review") statusText = "Warning";
                                     
+                                    // Extract portal source from evidence if available
+                                    const portalSource = cr.evidence?.category || cr.requirement_id.split('-')[0].toUpperCase();
+                                    
                                     return {
                                         id: idx,
-                                        name: cr.requirement_id.replace(/_/g, ' ').toUpperCase(),
+                                        name: cr.evidence?.requirement_name || cr.requirement_id.replace(/_/g, ' ').replace(/-/g, ' ').toUpperCase(),
                                         documentId: cr.evidence?.bidder_value || "N/A",
-                                        portal: portalName,
+                                        portal: portalSource,
                                         status: statusText,
                                         details: cr.remarks || "Automated check completed."
                                     };
@@ -287,17 +307,81 @@
                                         message: cr.remarks || `Issue detected in ${cr.requirement_id}`,
                                         action: "Please review the portal mismatch manually."
                                     }));
+                            } else {
+                                this.checks = [];
+                                this.aiRecommendations = [{
+                                    id: 0,
+                                    type: 'info',
+                                    message: 'No verification has been run yet.',
+                                    action: 'Click "Run AI Verification" to start the Layer 2+3+4 pipeline.'
+                                }];
                             }
-                        } catch(err) {
-                            console.error(err);
                         }
-                    } else {
-                        // Fallback to placeholder if no ID
-                        this.checks = [
-                            { id: 1, name: 'GST Registration', documentId: 'GSTIN: 27AADCTXXXX', portal: 'GSTN', status: 'Verified', details: 'Returns filed up to Aug.' }
-                        ];
+                    } catch(err) {
+                        console.error(err);
                     }
                     this.isLoading = false;
+                },
+
+                async runVerification() {
+                    if (!this.bidderId) return;
+                    this.isVerifying = true;
+                    try {
+                        const res = await fetch(`/api/v1/bidder/${this.bidderId}/verify`, { method: 'POST' });
+                        if (res.ok) {
+                            const data = await res.json();
+                            // Update UI directly from Layer 4 pipeline response
+                            this.bidder.score = data.compliance_score || 0;
+                            this.bidder.riskLevel = data.risk_level;
+                            
+                            // Layer 4 gives us a highly detailed top-level recommendation
+                            this.overallRecommendation = data.recommendation;
+                            
+                            this.checks = data.requirement_results.map((cr, idx) => {
+                                let statusText = "Pending";
+                                if (cr.status === "pass") statusText = "Verified";
+                                if (cr.status === "fail") statusText = "Discrepancy";
+                                if (cr.status === "needs_review") statusText = "Warning";
+                                return {
+                                    id: idx,
+                                    name: cr.requirement_name || cr.requirement_id.replace(/_/g, ' ').toUpperCase(),
+                                    documentId: cr.evidence_refs?.length > 0 ? "Multiple Sources" : "AI Check",
+                                    portal: "Pipeline Layer 3",
+                                    status: statusText,
+                                    details: cr.reason || "Automated check completed."
+                                };
+                            });
+                            
+                            // Clear and repopulate recommendations
+                            this.aiRecommendations = [];
+                            if (this.overallRecommendation) {
+                                this.aiRecommendations.push({
+                                    id: 'overall',
+                                    type: 'info',
+                                    message: 'Overall AI Assessment',
+                                    action: this.overallRecommendation
+                                });
+                            }
+                            
+                            const issues = data.requirement_results.filter(cr => cr.status === 'fail' || cr.status === 'needs_review');
+                            issues.forEach((cr, idx) => {
+                                this.aiRecommendations.push({
+                                    id: idx,
+                                    type: cr.status === 'fail' ? 'error' : 'warning',
+                                    message: cr.reason || `Issue detected in ${cr.requirement_name}`,
+                                    action: "Please review manually."
+                                });
+                            });
+                            
+                        } else {
+                            const errData = await res.text();
+                            alert(`Verification failed to run. \nStatus: ${res.status}\nError: ${errData}`);
+                        }
+                    } catch(err) {
+                        console.error(err);
+                        alert(`An error occurred running the verification: ${err.message}`);
+                    }
+                    this.isVerifying = false;
                 },
 
                 getScoreColor(score) {
@@ -334,11 +418,34 @@
                     this.decisionReason = '';
                     this.isModalOpen = true;
                 },
-                submitDecision() {
-                    if (this.decisionReason.trim() === '') return;
-                    alert(`Decision Recorded: ${this.decisionType.toUpperCase()}\nReason: ${this.decisionReason}\n\nIn a real app, this would send an API request to the backend and append to the Audit Log.`);
-                    this.isModalOpen = false;
-                    this.bidder.status = this.decisionType === 'accept' ? 'Qualified by Officer' : 'Disqualified by Officer';
+                async submitDecision() {
+                    if (this.decisionReason.trim() === '') {
+                        alert('Please provide a reason.');
+                        return;
+                    }
+                    
+                    const newStatus = this.decisionType === 'accept' ? 'VERIFIED' : 'REJECTED';
+                    
+                    try {
+                        const res = await fetch(`/api/v1/bidders/${this.bidderId}/status`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: newStatus, reason: this.decisionReason })
+                        });
+                        
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.bidder.status = data.status;
+                            this.isModalOpen = false;
+                            alert(`Status successfully updated to ${newStatus}`);
+                        } else {
+                            const errData = await res.text();
+                            alert(`Failed to update status. \nStatus: ${res.status}\nError: ${errData}`);
+                        }
+                    } catch(err) {
+                        console.error(err);
+                        alert(`An error occurred updating the status: ${err.message}`);
+                    }
                 }
             }))
         })

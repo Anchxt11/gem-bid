@@ -130,6 +130,11 @@ class VerificationOrchestrator:
                 )
                 saved_compliance_rows.append(row)
 
+        # Update bidder status to reflect that verification has been performed
+        from backend.app.models.bidder import BidderStatus
+        bidder.status = BidderStatus.IN_REVIEW
+        await self.bidder_repo.db.commit()
+
         await self.audit_service.log_action(
             entity_type="bidder",
             entity_id=bidder_id,

@@ -42,3 +42,28 @@ class BidderService:
             action="deleted",
             actor=actor,
         )
+
+    async def update_status(self, bidder_id: uuid.UUID, new_status: str, reason: str, actor: str) -> BidderRead:
+        bidder = await self.bidder_repo.get(bidder_id)
+        if not bidder:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bidder not found")
+        
+        from backend.app.models.bidder import BidderStatus
+        try:
+            status_enum = BidderStatus(new_status)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid status: {new_status}")
+            
+        bidder.status = status_enum
+        await self.bidder_repo.db.commit()
+        await self.bidder_repo.db.refresh(bidder)
+        
+        await self.audit_service.log_action(
+            entity_type="bidder",
+            entity_id=bidder_id,
+            action=f"status_changed_to_{new_status.lower()}",
+            actor=actor,
+            details={"reason": reason} if reason else None
+        )
+        
+        return BidderRead.model_validate(bidder)

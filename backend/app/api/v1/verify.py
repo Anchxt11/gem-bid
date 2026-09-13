@@ -18,3 +18,7 @@ async def verify_bidder(
         return await orchestrator.run_verification(bidder_id, actor=actor)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        error_msg = traceback.format_exc()
+        raise HTTPException(status_code=500, detail=error_msg)

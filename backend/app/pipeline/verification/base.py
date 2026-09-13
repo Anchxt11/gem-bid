@@ -78,17 +78,17 @@ class StubLLMReconciler(LLMReconciler):
         )
 
 class OllamaLLMReconciler(LLMReconciler):
-    def __init__(self, model: str = "llama3.2:3b", base_url: str = "http://localhost:11434"):
+    def __init__(self, model: str = "llama3.1:8b", base_url: str = "http://localhost:11434"):
         self.model = model
         self.base_url = base_url
 
-        async def is_available(self) -> bool:
-            try:
-                async with httpx.AsyncClient(timeout=3.0) as client:
-                    response = await client.get(f"{self.base_url}/api/tags")
-                    return response.status_code == 200
-            except Exception:
-                return False
+    async def is_available(self) -> bool:
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                response = await client.get(f"{self.base_url}/api/tags")
+                return response.status_code == 200
+        except Exception:
+            return False
 
     async def reconcile_ambiguous_name(self, bidder_name, portal_name, context):
         prompt = (

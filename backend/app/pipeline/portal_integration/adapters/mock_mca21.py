@@ -97,3 +97,5 @@ class MockMCA21Adapter(PortalAdapter):
             retrieved_at=retrieved_at,
             raw_response=raw_response,
         )
+
+_MOCK_MCA21_DB["U74999KA2020PTC140001"] = {'company_name': 'BHARAT DEFENCE SYSTEMS PRIVATE LIMITED', 'status': 'Active', 'date_of_incorporation': '2020-01-10', 'authorized_capital': '50000000', 'paid_up_capital': '25000000'}

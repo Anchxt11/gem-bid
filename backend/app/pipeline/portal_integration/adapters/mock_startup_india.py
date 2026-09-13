@@ -98,3 +98,5 @@ class MockStartupIndiaAdapter(PortalAdapter):
             retrieved_at=retrieved_at,
             raw_response=raw_response,
         )
+
+_MOCK_STARTUP_INDIA_DB["DIPP99991"] = {'entity_name': 'BHARAT DEFENCE SYSTEMS PVT LTD', 'valid_upto': '2028-06-30', 'recognition_number': 'DIPP99991', 'sector': 'Defence & Aerospace'}

@@ -97,3 +97,9 @@ class MockPANAdapter(PortalAdapter):
             retrieved_at=retrieved_at,
             raw_response=raw_response,
         )
+
+_MOCK_PAN_DB["INNOV8TE12"] = {"name_on_pan": "INNOVATETECH AI SOLUTIONS", "pan_status": "valid", "category": "Company"}
+
+_MOCK_PAN_DB["BDSPL7890A"] = {'name_on_pan': 'BHARAT DEFENCE SYSTEMS PVT LTD', 'pan_status': 'valid', 'category': 'Company'}
+
+_MOCK_PAN_DB["TASLM9876B"] = {'name_on_pan': 'TATA ADVANCED SYSTEMS LIMITED', 'pan_status': 'valid', 'category': 'Company'}

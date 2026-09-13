@@ -94,3 +94,5 @@ class MockESICAdapter(PortalAdapter):
             retrieved_at=retrieved_at,
             raw_response=raw_response,
         )
+
+_MOCK_ESIC_DB["31000123450000099"] = {'employer_name': 'BHARAT DEFENCE SYSTEMS PVT LTD', 'status': 'Active', 'employees_count': 180, 'last_contribution_month': '2026-08'}

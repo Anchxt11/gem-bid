@@ -96,3 +96,5 @@ class MockNSICAdapter(PortalAdapter):
             retrieved_at=retrieved_at,
             raw_response=raw_response,
         )
+
+_MOCK_NSIC_DB["NSIC/2021/KA/00123"] = {'unit_name': 'BHARAT DEFENCE SYSTEMS PVT LTD', 'validity_upto': '2027-12-31', 'category': 'Medium'}
